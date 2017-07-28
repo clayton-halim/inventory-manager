@@ -56,13 +56,13 @@ class MultiColumnListbox(tk.Frame):
         Sorts the data in a list column
         """
 
-        data = [(self.tree.set(child, col), child) for child in tree.get_children('')]
+        data = [(self.tree.set(child, col), child) for child in self.tree.get_children('')]
         data.sort(reverse=descending)
 
         for i, item in enumerate(data):
-            tree.move(data[1], '', i)
+            self.tree.move(item[1], '', i)
 
-        tree.heading(col, command=lambda c=col: self.sortby(c, not descending))
+        self.tree.heading(col, command=lambda c=col: self.sortby(c, not descending))
 
     def repopulate_list(self):
         for row in self.tree.get_children():
