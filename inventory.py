@@ -315,6 +315,7 @@ def main():
     app = Application(root)
     root.title('Inventory Manager')
     root.update()
+    root.minsize(root.winfo_width(), root.winfo_height())
     root.mainloop()
 
 if __name__ == '__main__':
