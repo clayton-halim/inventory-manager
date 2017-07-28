@@ -147,6 +147,22 @@ class Application(object):
         self.asset_list.grid(row=1, column=0, sticky='nesw')
         self.asset_list.rowconfigure(0, weight=1)
         self.asset_list.columnconfigure(0, weight=1)
+
+        # Item Description Frame
+        self.item_frame = ttk.LabelFrame(self.asset_frame, text='Description')
+        self.item_frame.rowconfigure(0, weight=1)
+        self.item_frame.columnconfigure(0, weight=1)
+        self.item_frame.grid(row=2, column=0, sticky='nesw', padx=10, pady=10)
+
+        self.item_msg = tk.Text(self.item_frame, wrap=tk.WORD, state=tk.DISABLED, height=3)
+        self.item_msg.grid(row=0, column=0, sticky='nesw')
+        msg_vsb = ttk.Scrollbar(self.item_frame, orient=tk.VERTICAL, command=self.item_msg.yview)
+        msg_vsb.grid(row=0, column=1, sticky='nes')
+
+        self.item_msg.configure(state=tk.NORMAL)
+        self.item_msg.insert(tk.END, 'This item is very new. No scratches, 100% great! If you have any questions please ask.')
+        self.item_msg.configure(state=tk.DISABLED)
+
         
     def _match_searchables(self, query, columns):
         """
@@ -170,7 +186,7 @@ class Application(object):
         """
         Filters the indexes of the asset list that matches the search query, then refreshes the list view
         """
-        
+
         query = self.search_bar.get() 
         if len(query) > 0 and query != SEARCH_HINT:
             self.asset_list.items_filtered = [index for index in range(len(self.asset_list.items))
