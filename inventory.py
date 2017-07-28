@@ -140,9 +140,28 @@ class Application(object):
         self.asset_list.rowconfigure(0, weight=1)
         self.asset_list.columnconfigure(0, weight=1)
         
+    def _match_searchables(self, query, columns):
+        """
+        Goes through all searchable columns and returns True if query matches at least one, else False
+        """
+        for column in SEARCHABLE:
+            if re.search(query, str(columns[COLUMN_INDEX[column]]), re.IGNORECASE):
+                return True 
+        return False
+        
+    def search_clear(self, *args):
+        if self.search_bar.get() == SEARCH_HINT:
+            self.search_query.set('')
 
     def search(self, *args):
-        pass
+        query = self.search_bar.get() 
+        if len(query) > 0 and query != SEARCH_HINT:
+            self.asset_list.items_filtered = [index for index in range(len(self.asset_list.items))
+                                                if self._match_searchables(query, self.asset_list.items[index])]
+        else:
+            self.asset_list.items_filtered = range(len(self.asset_list.items_filtered))
+
+        self.asset_list.repopulate_list()
 
     def search_clear(self, *args):
         if self.search_bar.get() == SEARCH_HINT:
