@@ -316,6 +316,12 @@ def main():
     root = tk.Tk()
     app = Application(root)
     root.title('Inventory Manager')
+    MYFONT = tkFont.Font(root, size=16)
+    
+    style = ttk.Style()
+    style.configure('.', font=MYFONT)
+    style.configure('Treeview.Heading', font=MYFONT, weight='bold')
+
     root.update()
     root.minsize(root.winfo_width(), root.winfo_height())
     root.mainloop()
