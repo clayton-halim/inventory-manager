@@ -194,6 +194,8 @@ class Application(object):
     def __init__(self, master):
         self.master = master
         self.master.rowconfigure(0, weight=1)
+        self.master.rowconfigure(1, weight=1)
+        self.master.rowconfigure(2, weight=1)
         self.master.columnconfigure(0, weight=1)
 
         # Items
@@ -239,10 +241,10 @@ class Application(object):
         self.asset_list.columnconfigure(0, weight=1)
 
         # Item Description Frame
-        self.item_frame = ttk.LabelFrame(self.asset_frame, text='Description')
+        self.item_frame = ttk.LabelFrame(self.master, text='Description')
         self.item_frame.rowconfigure(0, weight=1)
         self.item_frame.columnconfigure(0, weight=1)
-        self.item_frame.grid(row=2, column=0, sticky='nesw', padx=10, pady=10)
+        self.item_frame.grid(row=1, column=0, sticky='nesw', padx=10, pady=10)
 
         self.item_msg = tk.Text(self.item_frame, wrap=tk.WORD, state=tk.DISABLED, height=3)
         self.item_msg.grid(row=0, column=0, sticky='nesw')
@@ -256,9 +258,9 @@ class Application(object):
         # History message
         self.history_msg = tk.StringVar()
         self.history_msg.set('No action performed yet')
-        self.history_label = tk.Label(self.asset_frame, textvariable=self.history_msg, justify=tk.LEFT,
+        self.history_label = tk.Label(self.master, textvariable=self.history_msg, justify=tk.LEFT,
                                         anchor=tk.W)
-        self.history_label.grid(row=3, column=0, sticky='nesw')
+        self.history_label.grid(row=2, column=0, sticky='nesw')
 
         # Shopping cart frame
         self.cart_frame = tk.Frame(self.notebook, name='cart_frame')
