@@ -163,6 +163,14 @@ class Application(object):
         self.item_msg.insert(tk.END, 'This item is very new. No scratches, 100% great! If you have any questions please ask.')
         self.item_msg.configure(state=tk.DISABLED)
 
+        # History message
+        
+        self.history_msg = tk.StringVar()
+        self.history_msg.set('No action performed yet')
+        self.history_label = tk.Label(self.asset_frame, textvariable=self.history_msg, justify=tk.LEFT,
+                                        anchor=tk.W)
+        self.history_label.grid(row=3, column=0, sticky='nesw')
+
         
     def _match_searchables(self, query, columns):
         """
