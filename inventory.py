@@ -93,7 +93,7 @@ class AssetList(MultiColumnListbox):
         """
         Refreshes the view of the list
         """
-        
+
         for row in self.tree.get_children():
                 self.tree.delete(row)
         for index in self.items_filtered:
@@ -159,10 +159,18 @@ class Application(object):
         return False
         
     def search_clear(self, *args):
+        """
+        Clears the search bar if the search hint is present
+        """
+
         if self.search_bar.get() == SEARCH_HINT:
             self.search_query.set('')
 
     def search(self, *args):
+        """
+        Filters the indexes of the asset list that matches the search query, then refreshes the list view
+        """
+        
         query = self.search_bar.get() 
         if len(query) > 0 and query != SEARCH_HINT:
             self.asset_list.items_filtered = [index for index in range(len(self.asset_list.items))
@@ -171,10 +179,6 @@ class Application(object):
             self.asset_list.items_filtered = range(len(self.asset_list.items_filtered))
 
         self.asset_list.repopulate_list()
-
-    def search_clear(self, *args):
-        if self.search_bar.get() == SEARCH_HINT:
-            self.search_query.set('')
 
 def main():
     root = tk.Tk()
