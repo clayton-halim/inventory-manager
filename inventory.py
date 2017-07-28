@@ -65,6 +65,10 @@ class MultiColumnListbox(tk.Frame):
         self.tree.heading(col, command=lambda c=col: self.sortby(c, not descending))
 
     def repopulate_list(self):
+        """
+        Refreshes the view of the list
+        """
+
         for row in self.tree.get_children():
                 self.tree.delete(row)
         for item in self.items:
@@ -86,6 +90,10 @@ class AssetList(MultiColumnListbox):
         self.items_filtered = range(len(self.items))
 
     def repopulate_list(self):
+        """
+        Refreshes the view of the list
+        """
+        
         for row in self.tree.get_children():
                 self.tree.delete(row)
         for index in self.items_filtered:
@@ -144,6 +152,7 @@ class Application(object):
         """
         Goes through all searchable columns and returns True if query matches at least one, else False
         """
+
         for column in SEARCHABLE:
             if re.search(query, str(columns[COLUMN_INDEX[column]]), re.IGNORECASE):
                 return True 
