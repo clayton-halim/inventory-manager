@@ -21,6 +21,7 @@ class MultiColumnListbox(tk.Frame):
        
         self.header = header
         self.items = items
+        self.filtered_items_ix = range(len(items))  # indexes of filtered items
 
         self.tree = ttk.Treeview(self, columns=self.header, show='headings')
         v_scroll = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.tree.yview)
@@ -42,14 +43,14 @@ class MultiColumnListbox(tk.Frame):
                                 command=lambda c=col: self.sortby(c, True))
             self.tree.column(col, width=tkFont.Font().measure(col.title())+20)  # +20 for extra padding
 
-        for item in self.items:
-            self.tree.insert('', index='end', values=item)
+        for ix in self.filtered_items_ix:
+            self.tree.insert('', index='end', values=self.items[ix])
 
-        # Ensure column width fits values
-        for i, val in enumerate(item):
-            col_width = tkFont.Font().measure(val) + 20
-            if self.tree.column(self.header[i], width=None) < col_width:
-                self.tree.column(self.header[i], width=col_width)
+            # Ensure column width fits values
+            for i in range(len(self.header)):
+                col_width = tkFont.Font().measure(self.items[ix][i]) + 20
+                if self.tree.column(self.header[i], width=None) < col_width:
+                    self.tree.column(self.header[i], width=col_width)
 
     def sortby(self, col, descending):
         """
@@ -71,8 +72,8 @@ class MultiColumnListbox(tk.Frame):
 
         for row in self.tree.get_children():
                 self.tree.delete(row)
-        for item in self.items:
-            self.tree.insert('', index='end', values=item)
+        for ix in self.filtered_items_ix:
+            self.tree.insert('', index='end', values=self.items[ix])
 
 class AssetList(MultiColumnListbox):
     def __init__(self, master, app_toplevel, header, items):
@@ -81,13 +82,11 @@ class AssetList(MultiColumnListbox):
         self.app_toplevel = app_toplevel
 
         # Asset list tree configurations
-        self.tree.configure(selectmode=tk.BROWSE)
+        self.tree.configure(selectmode=tk.BROWSE)  # One item selection at a time
         self.tree.bind('<Double-Button-1>', self.select_item)
         self.tree.bind('<Return>', self.select_item)
         self.tree.tag_configure('Borrowed', background='#F44336')
         self.tree.tag_configure('Shopping Cart', background='#80DEEA')
-
-        self.items_filtered = range(len(self.items))
 
     def repopulate_list(self):
         """
@@ -96,8 +95,21 @@ class AssetList(MultiColumnListbox):
 
         for row in self.tree.get_children():
                 self.tree.delete(row)
-        for index in self.items_filtered:
-            self.tree.insert('', index='end', values=self.items[index])
+        for ix in self.filtered_items_ix:
+            item = self.items[ix]
+            self.tree.insert('', index='end', values=item, tags=[item[COLUMN_INDEX['State']]])
+
+    def select_item(self, *args):
+        pass
+
+class ShoppingCart(MultiColumnListbox):
+    def __init__(self, master, app_toplevel, header, items):
+        MultiColumnListbox.__init__(self, master, header, items)
+        self.master = master
+        self.app_toplevel = app_toplevel
+        self.tree.bind('<Double-Button-1>', self.select_item)
+        self.filtered_items_ix = []
+        self.repopulate_list()
 
     def select_item(self, *args):
         pass
@@ -164,14 +176,26 @@ class Application(object):
         self.item_msg.configure(state=tk.DISABLED)
 
         # History message
-        
         self.history_msg = tk.StringVar()
         self.history_msg.set('No action performed yet')
         self.history_label = tk.Label(self.asset_frame, textvariable=self.history_msg, justify=tk.LEFT,
                                         anchor=tk.W)
         self.history_label.grid(row=3, column=0, sticky='nesw')
 
-        
+        # Shopping cart frame
+        self.cart_frame = tk.Frame(self.notebook, name='cart_frame')
+        self.cart_frame.grid(row=0, column=0, sticky='nesw')
+        self.cart_frame.rowconfigure(0, weight=1)
+        self.cart_frame.columnconfigure(0, weight=1)
+        self.notebook.add(self.cart_frame, text='Shopping Cart (0)') 
+
+        # Shopping cart list
+        self.shopping_cart_header = ['Asset Number', 'Item']
+        self.shopping_cart = ShoppingCart(self.cart_frame, self, self.shopping_cart_header, self.asset_list_items)
+        self.shopping_cart.grid(row=0, column=0, sticky='nesw')
+        self.shopping_cart.rowconfigure(0, weight=1)
+        self.shopping_cart.columnconfigure(0, weight=1)
+
     def _match_searchables(self, query, columns):
         """
         Goes through all searchable columns and returns True if query matches at least one, else False
@@ -197,10 +221,10 @@ class Application(object):
 
         query = self.search_bar.get() 
         if len(query) > 0 and query != SEARCH_HINT:
-            self.asset_list.items_filtered = [index for index in range(len(self.asset_list.items))
-                                                if self._match_searchables(query, self.asset_list.items[index])]
+            self.asset_list.filtered_items_ix = [index for index in range(len(self.asset_list.items))
+                                                    if self._match_searchables(query, self.asset_list.items[index])]
         else:
-            self.asset_list.items_filtered = range(len(self.asset_list.items_filtered))
+            self.asset_list.filtered_items_ix = range(len(self.asset_list.items))
 
         self.asset_list.repopulate_list()
 
