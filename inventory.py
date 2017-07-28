@@ -193,9 +193,8 @@ class ShoppingCart(MultiColumnListbox):
 class Application(object):
     def __init__(self, master):
         self.master = master
-        self.master.rowconfigure(0, weight=1)
+        self.master.rowconfigure(0, weight=10)
         self.master.rowconfigure(1, weight=1)
-        self.master.rowconfigure(2, weight=1)
         self.master.columnconfigure(0, weight=1)
 
         # Items
@@ -317,7 +316,7 @@ def main():
     app = Application(root)
     root.title('Inventory Manager')
     MYFONT = tkFont.Font(root, size=16)
-    
+
     style = ttk.Style()
     style.configure('.', font=MYFONT)
     style.configure('Treeview.Heading', font=MYFONT, weight='bold')
