@@ -7,8 +7,8 @@ import tkinter as tk
 import tkinter.font as tkFont
 import tkinter.ttk as ttk
 
-COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5}
-SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date']
+COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
+SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date', 'Description']
 SEARCH_HINT = 'search...'
 
 # TEMPORARY DUMMY DATA
@@ -84,6 +84,8 @@ class AssetList(MultiColumnListbox):
 
         # Asset list tree configurations
         self.tree.configure(selectmode=tk.BROWSE)  # One item selection at a time
+        self.tree.bind('<ButtonRelease-1>', 
+                        lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
         self.tree.bind('<Double-Button-1>', self.select_item)
         self.tree.bind('<Return>', self.select_item)
         self.tree.tag_configure('Borrowed', background='#F44336')
@@ -151,6 +153,8 @@ class ShoppingCart(MultiColumnListbox):
         MultiColumnListbox.__init__(self, master, header, items)
         self.master = master
         self.app_toplevel = app_toplevel
+        self.tree.bind('<ButtonRelease-1>', 
+                        lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
         self.tree.bind('<Double-Button-1>', self.select_item)
         self.filtered_items_ix = []
         self.repopulate_list()
@@ -189,7 +193,6 @@ class ShoppingCart(MultiColumnListbox):
                         values=new_values, tags=[new_values[COLUMN_INDEX['State']]])
                     break
 
-
 class Application(object):
     def __init__(self, master):
         self.master = master
@@ -206,7 +209,8 @@ class Application(object):
                                   states[random.randint(0, len(states) - 2)],
                                   'John Smith',
                                   'John.Smith@drdc-rddc.gc.ca',
-                                  'Jul 28'] 
+                                  'Jul 28',
+                                  random.randint(100000, 10000000)] 
                                     for i in range(100)]
         for i, id_ in enumerate(np.random.choice(100, 100, replace=False)):
             self.asset_list_items[i][0] = id_
@@ -223,6 +227,8 @@ class Application(object):
         self.asset_frame.rowconfigure(1, weight=1)
         self.asset_frame.columnconfigure(0, weight=1)
         self.notebook.add(self.asset_frame, text='Asset List')
+        self.asset_frame.bind('<Visibility>',
+                                lambda event: self.tab_update_description("Asset Frame"))
 
         # Search bar
         self.search_query = tk.StringVar()
@@ -250,10 +256,6 @@ class Application(object):
         msg_vsb = ttk.Scrollbar(self.item_frame, orient=tk.VERTICAL, command=self.item_msg.yview)
         msg_vsb.grid(row=0, column=1, sticky='nes')
 
-        self.item_msg.configure(state=tk.NORMAL)
-        self.item_msg.insert(tk.END, 'This item is very new. No scratches, 100% great! If you have any questions please ask.')
-        self.item_msg.configure(state=tk.DISABLED)
-
         # History message
         self.history_msg = tk.StringVar()
         self.history_msg.set('No action performed yet')
@@ -265,8 +267,11 @@ class Application(object):
         self.cart_frame = tk.Frame(self.notebook, name='cart_frame')
         self.cart_frame.grid(row=0, column=0, sticky='nesw')
         self.cart_frame.rowconfigure(0, weight=1)
-        self.cart_frame.columnconfigure(0, weight=1)
+        self.cart_frame.columnconfigure(0, weight=3)
+        self.cart_frame.columnconfigure(1, weight=1)
         self.notebook.add(self.cart_frame, text='Shopping Cart (0)') 
+        self.cart_frame.bind('<Visibility>',
+                                lambda event: self.tab_update_description("Cart Frame"))
 
         # Shopping cart list
         self.shopping_cart_header = ['Asset Number', 'Item']
@@ -274,6 +279,8 @@ class Application(object):
         self.shopping_cart.grid(row=0, column=0, sticky='nesw')
         self.shopping_cart.rowconfigure(0, weight=1)
         self.shopping_cart.columnconfigure(0, weight=1)
+
+        
 
     def _match_searchables(self, query, columns):
         """
@@ -310,6 +317,33 @@ class Application(object):
     def update_cart_count(self):
         self.notebook.tab('.!notebook.cart_frame', 
                     text='Shopping Cart ({})'.format(len(self.shopping_cart.filtered_items_ix)))
+
+    def update_description(self, tree):
+        item = None
+
+        try:
+            item = tree.item(tree.focus())['values']
+        except KeyError as ke:
+            pass
+    
+        if item is not None and item != '':
+            description = item[COLUMN_INDEX['Description']]
+            self.item_msg.configure(state=tk.NORMAL)
+            self.item_msg.delete('1.0', tk.END)
+            self.item_msg.insert(tk.END, description)
+            self.item_msg.configure(state=tk.DISABLED)
+
+    def tab_update_description(self, tab_name):
+        tree_type = None
+        
+        if tab_name == 'Asset Frame':
+            tree_type = self.asset_list.tree
+        elif tab_name == 'Cart Frame':
+            tree_type = self.shopping_cart.tree
+
+        if tree_type is not None:
+            self.update_description(tree_type)
+
 
 def main():
     root = tk.Tk()
