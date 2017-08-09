@@ -280,7 +280,24 @@ class Application(object):
         self.shopping_cart.rowconfigure(0, weight=1)
         self.shopping_cart.columnconfigure(0, weight=1)
 
+        # User Profile Frame
+        self.profile_frame = ttk.LabelFrame(self.cart_frame, text='Your Info')
+        self.profile_frame.grid(row=0, column=1, sticky='nesw', padx=20, pady=20)
+        # self.profile_frame.rowconfigure(0, weight=1)
+        # self.profile_frame.rowconfigure(1, weight=1)
+        # self.profile_frame.rowconfigure(2, weight=1)
+        # self.profile_frame.columnconfigure(0, weight=1)
         
+
+        # Name Label
+        self.profile_name_lbl = tk.Label(self.profile_frame, text='Name')
+        self.profile_name_lbl.pack(side=tk.TOP, expand=True)
+        self.profile_name = tk.Message(self.profile_frame, text='Clayton Halim')
+        
+
+        # Checkout Button
+        self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
+        self.checkout_button.pack(side=tk.BOTTOM, fill=tk.X, expand=True)
 
     def _match_searchables(self, query, columns):
         """
