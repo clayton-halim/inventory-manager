@@ -41,7 +41,7 @@ class MultiColumnListbox(tk.Frame):
 
         for col in self.header:
             self.tree.heading(col, text=col.title(),
-                                command=lambda c=col: self.sortby(c, True))
+                                command=lambda c=col: self.sortby(c, False))
             self.tree.column(col, width=tkFont.Font().measure(col.title())+20)  # +20 for extra padding
 
         for ix in self.filtered_items_ix:
@@ -287,17 +287,18 @@ class Application(object):
         # self.profile_frame.rowconfigure(1, weight=1)
         # self.profile_frame.rowconfigure(2, weight=1)
         # self.profile_frame.columnconfigure(0, weight=1)
-        
-
+         
         # Name Label
         self.profile_name_lbl = tk.Label(self.profile_frame, text='Name')
         self.profile_name_lbl.pack(side=tk.TOP, expand=True)
         self.profile_name = tk.Message(self.profile_frame, text='Clayton Halim')
-        
 
         # Checkout Button
         self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
         self.checkout_button.pack(side=tk.BOTTOM, fill=tk.X, expand=True)
+
+        self.settings_frame = tk.Frame(self.notebook, name='settings_frame')
+        self.notebook.add(self.settings_frame, text="Settings")
 
     def _match_searchables(self, query, columns):
         """
