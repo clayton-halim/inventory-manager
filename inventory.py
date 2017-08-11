@@ -426,6 +426,8 @@ class Application(object):
         with open(SETTINGS_PATH, 'w') as wp:
             json.dump(new_settings, wp)
 
+        self.history_msg.set('Settings saved')
+
 
     def tab_update_description(self, tab_name):
         tree_type = None
