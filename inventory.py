@@ -203,6 +203,9 @@ class Application(object):
         self.master.rowconfigure(1, weight=1)
         self.master.columnconfigure(0, weight=1)
 
+        self.settings = {setting: tk.StringVar() 
+                            for setting in ['first_name', 'last_name', 'email']}
+
         # Items
         self.asset_list_header = [header[0] for header in 
                                     sorted([(column, COLUMN_INDEX[column]) 
@@ -284,21 +287,40 @@ class Application(object):
         self.shopping_cart.columnconfigure(0, weight=1)
 
         # User Profile Frame
-        self.profile_frame = ttk.LabelFrame(self.cart_frame, text='Your Info')
+        self.label_font = tkFont.Font(weight='bold')
+
+        self.profile_frame = ttk.LabelFrame(self.cart_frame, 
+                                            text='Your Info', labelanchor='n')
         self.profile_frame.grid(row=0, column=1, sticky='nesw', padx=20, pady=20)
         # self.profile_frame.rowconfigure(0, weight=1)
-        # self.profile_frame.rowconfigure(1, weight=1)
         # self.profile_frame.rowconfigure(2, weight=1)
-        # self.profile_frame.columnconfigure(0, weight=1)
+        self.profile_frame.columnconfigure(0, weight=1)
          
         # Name Label
-        self.profile_name_lbl = tk.Label(self.profile_frame, text='Name')
-        self.profile_name_lbl.pack(side=tk.TOP, expand=True)
-        self.profile_name = tk.Message(self.profile_frame, text='Clayton Halim')
+        self.profile_fname_lbl = tk.Label(self.profile_frame, text='First Name', 
+                                            font=self.label_font)
+        self.profile_fname_lbl.grid(row=0, column=0, sticky='w', padx=15, pady=(15, 0))
+        self.profile_fname = tk.Label(self.profile_frame, 
+                                        textvariable=self.settings['first_name'])
+        self.profile_fname.grid(row=1, column=0, sticky='w', padx=15)
+
+        self.profile_lname_lbl = tk.Label(self.profile_frame, text='Last Name', 
+                                            font=self.label_font)
+        self.profile_lname_lbl.grid(row=2, column=0, sticky='w', padx=15, pady=(15, 0))
+        self.profile_lname = tk.Label(self.profile_frame, 
+                                        textvariable=self.settings['last_name'])
+        self.profile_lname.grid(row=3, column=0, sticky='w', padx=15)
+
+        self.profile_email_lbl = tk.Label(self.profile_frame, text='Email', 
+                                            font=self.label_font)
+        self.profile_email_lbl.grid(row=4, column=0, sticky='w', padx=15, pady=(15, 0))
+        self.profile_email = tk.Label(self.profile_frame, 
+                                        textvariable=self.settings['email'])
+        self.profile_email.grid(row=5, column=0, sticky='w', padx=15)
 
         # Checkout Button
         self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
-        self.checkout_button.pack(side=tk.BOTTOM, fill=tk.X, expand=True)
+        self.checkout_button.grid(row=6, column=0, sticky='s', padx=15, pady=15)
 
         # Settings
         self.settings_frame = tk.Frame(self.notebook, name='settings_frame')
@@ -309,9 +331,6 @@ class Application(object):
         self.user_frame = ttk.LabelFrame(self.settings_frame, text='User Settings', 
                                             labelanchor='n')
         self.user_frame.grid(row=0, column=1, sticky='nesw', padx=20, pady=20)
-
-        self.settings = {setting: tk.StringVar() 
-                            for setting in ['first_name', 'last_name', 'email']}
 
         self.first_name_lbl = tk.Label(self.user_frame, text='First Name')
         self.first_name_lbl.grid(row=0, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
