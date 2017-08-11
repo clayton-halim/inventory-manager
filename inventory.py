@@ -342,7 +342,7 @@ class Application(object):
         if os.path.exists(SETTINGS_PATH):
             with open(SETTINGS_PATH, 'r') as config_file:
                 in_settings = json.load(config_file)
-                for setting in in_settings :
+                for setting in in_settings:
                     self.settings[setting].set(in_settings[setting])
         else:
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
