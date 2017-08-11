@@ -380,7 +380,7 @@ class Application(object):
         self.asset_list.repopulate_list()
 
     def update_cart_count(self):
-        self.notebook.tab('.!notebook.cart_frame', 
+        self.notebook.tab(self.notebook.tabs()[NOTEBOOK_INDEX['Shopping Cart']], 
                     text='Shopping Cart ({})'.format(len(self.shopping_cart.filtered_items_ix)))
 
     def update_description(self, tree):
