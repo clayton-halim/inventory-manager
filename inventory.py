@@ -1,4 +1,6 @@
+import json
 from operator import itemgetter
+import os
 import random
 import re
 
@@ -8,8 +10,10 @@ import tkinter.font as tkFont
 import tkinter.ttk as ttk
 
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
+NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Settings': 2}
 SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date', 'Description']
 SEARCH_HINT = 'search...'
+SETTINGS_PATH = os.path.join('settings', 'asset_settings.json')
 
 # TEMPORARY DUMMY DATA
 items = ['Laptop', 'Microphone', 'Pen', 'Monitor', 'Keyboard', 'Strapped Bag',
@@ -297,8 +301,51 @@ class Application(object):
         self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
         self.checkout_button.pack(side=tk.BOTTOM, fill=tk.X, expand=True)
 
+        # Settings
         self.settings_frame = tk.Frame(self.notebook, name='settings_frame')
+        self.settings_frame.rowconfigure(0, weight=1)
         self.notebook.add(self.settings_frame, text="Settings")
+
+        # User Settings Frame
+        self.user_frame = ttk.LabelFrame(self.settings_frame, text='User Settings', 
+                                            labelanchor='n')
+        self.user_frame.grid(row=0, column=1, sticky='nesw', padx=20, pady=20)
+
+        self.settings = {setting: tk.StringVar() 
+                            for setting in ['first_name', 'last_name', 'email']}
+
+        self.first_name_lbl = tk.Label(self.user_frame, text='First Name')
+        self.first_name_lbl.grid(row=0, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
+
+        self.first_name_entry = tk.Entry(self.user_frame, width=40, 
+                                            textvariable=self.settings['first_name'])
+        self.first_name_entry.grid(row=1, column=0, sticky='w', padx=20)
+
+        self.last_name_lbl = tk.Label(self.user_frame, text='Last Name')
+        self.last_name_lbl.grid(row=2, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
+
+        self.last_name_entry = tk.Entry(self.user_frame, width=40, 
+                                        textvariable=self.settings['last_name'])
+        self.last_name_entry.grid(row=3, column=0, sticky='w', padx=20)
+
+        self.email_lbl = tk.Label(self.user_frame, text='Email') 
+        self.email_lbl.grid(row=4, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
+
+        self.email_entry = tk.Entry(self.user_frame, width=40, 
+                                    textvariable=self.settings['email'])
+        self.email_entry.grid(row=5, column=0, sticky='w', padx=20, pady=(0, 10))
+
+        self.save_settings_btn = tk.Button(self.user_frame, text='Save', width=10,
+                                            command=self.save_settings)
+        self.save_settings_btn.grid(row=6, column=0, sticky='s', pady=15)
+
+        if os.path.exists(SETTINGS_PATH):
+            with open(SETTINGS_PATH, 'r') as config_file:
+                in_settings = json.load(config_file)
+                for setting in in_settings :
+                    self.settings[setting].set(in_settings[setting])
+        else:
+            self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
 
     def _match_searchables(self, query, columns):
         """
@@ -350,6 +397,17 @@ class Application(object):
             self.item_msg.delete('1.0', tk.END)
             self.item_msg.insert(tk.END, description)
             self.item_msg.configure(state=tk.DISABLED)
+
+    def save_settings(self, *args):
+        new_settings = {setting: self.settings[setting].get() 
+                        for setting in self.settings}
+
+        if not os.path.exists(os.path.dirname(SETTINGS_PATH)):
+            os.makedirs(os.path.dirname(SETTINGS_PATH))
+
+        with open(SETTINGS_PATH, 'w') as wp:
+            json.dump(new_settings, wp)
+
 
     def tab_update_description(self, tab_name):
         tree_type = None
