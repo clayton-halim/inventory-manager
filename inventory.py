@@ -4,7 +4,6 @@ import os
 import random
 import re
 
-import numpy as np
 import tkinter as tk
 import tkinter.font as tkFont
 import tkinter.ttk as ttk
@@ -216,8 +215,8 @@ class Application(object):
                                   'Jul 28',
                                   random.randint(100000, 10000000)] 
                                     for i in range(100)]
-        for i, id_ in enumerate(np.random.choice(100, 100, replace=False)):
-            self.asset_list_items[i][0] = id_
+        for i in range(len(self.asset_list_items)):
+            self.asset_list_items[i][0] = i
 
         # Tabs for asset list / shopping cart
         self.notebook = ttk.Notebook(self.master)
