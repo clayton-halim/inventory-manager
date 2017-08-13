@@ -7,6 +7,7 @@ import re
 import tkinter as tk
 import tkinter.font as tkFont
 import tkinter.ttk as ttk
+from tkinter import messagebox
 
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
 NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Settings': 2}
@@ -364,6 +365,8 @@ class Application(object):
                     self.settings[setting].set(in_settings[setting])
         else:
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
+            messagebox.showwarning(title='Missing user profile', 
+                                        message='Please insert your information to checkout items.')
 
     def _match_searchables(self, query, columns):
         """
@@ -428,7 +431,6 @@ class Application(object):
 
         self.history_msg.set('Settings saved')
 
-
     def tab_update_description(self, tab_name):
         tree_type = None
         
@@ -439,7 +441,6 @@ class Application(object):
 
         if tree_type is not None:
             self.update_description(tree_type)
-
 
 def main():
     root = tk.Tk()
