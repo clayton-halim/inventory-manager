@@ -3,11 +3,12 @@ from operator import itemgetter
 import os
 import random
 import re
+import sqlite3
 
 import tkinter as tk
 import tkinter.font as tkFont
 import tkinter.ttk as ttk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
 NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Settings': 2}
@@ -293,8 +294,6 @@ class Application(object):
         self.profile_frame = ttk.LabelFrame(self.cart_frame, 
                                             text='Your Info', labelanchor='n')
         self.profile_frame.grid(row=0, column=1, sticky='nesw', padx=20, pady=20)
-        # self.profile_frame.rowconfigure(0, weight=1)
-        # self.profile_frame.rowconfigure(2, weight=1)
         self.profile_frame.columnconfigure(0, weight=1)
          
         # Name Label
@@ -326,12 +325,13 @@ class Application(object):
         # Settings
         self.settings_frame = tk.Frame(self.notebook, name='settings_frame')
         self.settings_frame.rowconfigure(0, weight=1)
+        self.settings_frame.columnconfigure(1, weight=1)
         self.notebook.add(self.settings_frame, text="Settings")
 
         # User Settings Frame
         self.user_frame = ttk.LabelFrame(self.settings_frame, text='User Settings', 
                                             labelanchor='n')
-        self.user_frame.grid(row=0, column=1, sticky='nesw', padx=20, pady=20)
+        self.user_frame.grid(row=0, column=0, sticky='nesw', padx=20, pady=20)
 
         self.first_name_lbl = tk.Label(self.user_frame, text='First Name')
         self.first_name_lbl.grid(row=0, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
@@ -358,6 +358,29 @@ class Application(object):
                                             command=self.save_settings)
         self.save_settings_btn.grid(row=6, column=0, sticky='s', pady=15)
 
+        self.about_frame = tk.Frame(self.settings_frame)
+        self.about_frame.grid(row=0, column=1, sticky='new')
+        self.about_frame.columnconfigure(0, weight=1)
+
+        # Database Path Finder
+        self.db_path_frame = tk.LabelFrame(self.about_frame, text='Database Path',
+                                            labelanchor='n')
+        self.db_path_frame.grid(row=0, column=0, sticky='new', 
+                                padx=15, pady=(25, 0))
+        self.db_path_frame.columnconfigure(0, weight=0)
+        self.db_path_frame.columnconfigure(1, weight=1)
+
+        self.file_choose_btn = tk.Button(self.db_path_frame, text='Choose', 
+                                            command=self.choose_db_file)
+        self.file_choose_btn.grid(row=0, column=0, sticky='new', padx=(15, 0), pady=15)
+        self.db_path_msg = tk.Text(self.db_path_frame, 
+                                    state=tk.DISABLED, height=2)
+        self.db_path_msg.grid(row=0, column=1, sticky='new', padx=(0, 15), pady=15)
+        self.db_warning_lbl = tk.Label(self.db_path_frame, 
+                                        text='WARNING: all unsaved changes will be lost',
+                                        font=self.label_font)
+        self.db_warning_lbl.grid(row=1, column=0, columnspan=2, padx=15, pady=5)
+
         if os.path.exists(SETTINGS_PATH):
             with open(SETTINGS_PATH, 'r') as config_file:
                 in_settings = json.load(config_file)
@@ -367,6 +390,48 @@ class Application(object):
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
             messagebox.showwarning(title='Missing user profile', 
                                         message='Please insert your information to checkout items.')
+        
+
+    def choose_db_file(self, *args):
+        self.settings['db_path'] = filedialog.askopenfilename(filetypes=(('Database Files', '*.db'),))
+        conn = sqlite3.connect(self.settings['db_path'])
+        cursor = conn.cursor()
+
+        SELECT_QUERY = ('SELECT assets.asset_id, name, state, (first_name || last_name), email, return_date, description ' 
+                        'from assets LEFT JOIN (SELECT * FROM borrow_list LEFT JOIN USERS)')
+        error = False
+
+        try:
+            self.asset_list.tree.delete(*self.asset_list.tree.get_children())
+            recovery = self.asset_list.items[:]   # In case something goes wrong, we can reuse this
+            del self.asset_list.items[:]  # Empty list 
+        except Exception as ex:
+            print('ERROR:', str(ex))
+            error = True
+
+        try:
+            for item in list(cursor.execute(SELECT_QUERY)):
+                item = [value if value is not None else '---' for value in item]
+                if item[COLUMN_INDEX['State']] == '---':
+                    item[COLUMN_INDEX['State']] = 'Available'
+                self.asset_list.items.append(item)
+
+            self.asset_list.filtered_items_ix = range(len(self.asset_list.items))
+        except Exception as ex:
+            print('ERROR:', str(ex))
+            self.asset_list.items = recovery
+            self.shopping_cart.items = recovery
+            error = True
+
+        if not error:
+            self.db_path_msg.configure(state=tk.NORMAL)
+            self.db_path_msg.delete('1.0', tk.END)
+            self.db_path_msg.insert(tk.END, self.settings['db_path'])
+            self.db_path_msg.configure(state=tk.DISABLED)
+            self.shopping_cart.repopulate_list()
+
+        self.asset_list.repopulate_list()
+        
 
     def _match_searchables(self, query, columns):
         """
