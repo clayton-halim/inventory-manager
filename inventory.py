@@ -108,7 +108,9 @@ class AssetList(MultiColumnListbox):
 
         # Asset list tree configurations
         self.tree.configure(selectmode=tk.BROWSE)  # One item selection at a time
-        self.tree.bind('<ButtonRelease-1>', 
+
+        for binding in ['<ButtonRelease-1>', '<KeyRelease-Up>', '<KeyRelease-Down>']:
+            self.tree.bind(binding, 
                         lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
         self.tree.bind('<Double-Button-1>', self.select_item)
         self.tree.bind('<Return>', self.select_item)
@@ -178,7 +180,8 @@ class ShoppingCart(MultiColumnListbox):
         MultiColumnListbox.__init__(self, master, header, items)
         self.master = master
         self.app_toplevel = app_toplevel
-        self.tree.bind('<ButtonRelease-1>', 
+        for binding in ['<ButtonRelease-1>', '<KeyRelease-Up>', '<KeyRelease-Down>']:
+            self.tree.bind(binding, 
                         lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
         self.tree.bind('<Double-Button-1>', self.select_item)
         self.filtered_items_ix = []
@@ -223,9 +226,9 @@ class BorrowList(MultiColumnListbox):
         MultiColumnListbox.__init__(self, master, header, items)
         self.master = master
         self.app_toplevel = app_toplevel
-        self.tree.bind('<ButtonRelease-1>', 
+        for binding in ['<ButtonRelease-1>', '<KeyRelease-Up>', '<KeyRelease-Down>']:
+            self.tree.bind(binding, 
                         lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
-        # self.tree.bind('<Double-Button-1>', self.select_item)
         self.update_filter()
         self.repopulate_list()
 
