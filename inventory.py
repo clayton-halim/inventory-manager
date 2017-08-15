@@ -65,7 +65,7 @@ class MultiColumnListbox(tk.Frame):
         """
 
         column_count = len(self.header)
-        widths = [tkFont.Font().measure(col) + 20 for col in self.header]
+        widths = [self.tree.column(col)['width'] for col in self.header]
 
         for ix in self.filtered_items_ix:
             for i in range(column_count):
@@ -256,7 +256,8 @@ class Application(object):
         # Items
         self.asset_list_header = [header[0] for header in 
                                     sorted([(column, COLUMN_INDEX[column]) 
-                                                for column in COLUMN_INDEX], key=itemgetter(1))]
+                                                for column in COLUMN_INDEX], key=itemgetter(1))
+                                    if header[0] not in ['Description']]
         self.asset_list_items = []
 
         # Tabs for asset list / shopping cart
