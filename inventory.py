@@ -492,6 +492,9 @@ class Application(object):
                 item = [value if value is not None else '---' for value in item]
                 if item[COLUMN_INDEX['State']] == '---':
                     item[COLUMN_INDEX['State']] = 'Available'
+                if item[COLUMN_INDEX['Due Date']] != '---':
+                    item[COLUMN_INDEX['Due Date']] = time.ctime(
+                                                        int(item[COLUMN_INDEX['Due Date']]))
                 items.append(item)
         except Exception as ex:
             print('ERROR:', str(ex))
