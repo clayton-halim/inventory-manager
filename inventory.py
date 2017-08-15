@@ -4,6 +4,7 @@ import os
 import random
 import re
 import sqlite3
+import time
 
 import tkinter as tk
 import tkinter.font as tkFont
@@ -474,7 +475,7 @@ class Application(object):
         """
 
         for column in SEARCHABLE:
-            if re.search(query, str(columns[COLUMN_INDEX[column]]), re.IGNORECASE):
+            if str(columns[COLUMN_INDEX[column]]).lower().find(query) != -1:
                 return True 
         return False
 
@@ -494,7 +495,6 @@ class Application(object):
                 items.append(item)
         except Exception as ex:
             print('ERROR:', str(ex))
-            items = None
 
         return items
         
