@@ -11,9 +11,10 @@ import tkinter.ttk as ttk
 from tkinter import messagebox, filedialog
 
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
-NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Settings': 2}
+NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Borrowed List': 2, 'Settings': 3}
 SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date', 'Description']
 SEARCH_HINT = 'search...'
+SETTINGS = ['first_name', 'last_name', 'email', 'database_path']
 SETTINGS_PATH = os.path.join('settings', 'asset_settings.json')
 
 # TEMPORARY DUMMY DATA
@@ -27,7 +28,7 @@ class MultiColumnListbox(tk.Frame):
        
         self.header = header
         self.items = items
-        self.filtered_items_ix = range(len(items))  # indexes of filtered items
+        self.filtered_items_ix = list(range(len(items)))  # indexes of filtered items
 
         self.tree = ttk.Treeview(self, columns=self.header, show='headings')
         v_scroll = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.tree.yview)
@@ -198,6 +199,29 @@ class ShoppingCart(MultiColumnListbox):
                         values=new_values, tags=[new_values[COLUMN_INDEX['State']]])
                     break
 
+class BorrowList(MultiColumnListbox):
+    def __init__(self, master, app_toplevel, header, items):
+        MultiColumnListbox.__init__(self, master, header, items)
+        self.master = master
+        self.app_toplevel = app_toplevel
+        self.tree.bind('<ButtonRelease-1>', 
+                        lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
+        # self.tree.bind('<Double-Button-1>', self.select_item)
+        self.update_filter()
+        self.repopulate_list()
+
+    def repopulate_list(self):
+        self.update_filter()
+        super().repopulate_list()
+
+    def update_filter(self):
+        self.filtered_items_ix = []
+
+        for ix in range(len(self.items)):
+            if (self.items[ix][COLUMN_INDEX['Email']].lower() 
+                    == self.app_toplevel.settings['email'].get().lower()):
+                self.filtered_items_ix.append(ix)
+        
 class Application(object):
     def __init__(self, master):
         self.master = master
@@ -205,23 +229,13 @@ class Application(object):
         self.master.rowconfigure(1, weight=1)
         self.master.columnconfigure(0, weight=1)
 
-        self.settings = {setting: tk.StringVar() 
-                            for setting in ['first_name', 'last_name', 'email']}
+        self.settings = {setting: tk.StringVar() for setting in SETTINGS}
 
         # Items
         self.asset_list_header = [header[0] for header in 
                                     sorted([(column, COLUMN_INDEX[column]) 
-                                                for column in COLUMN_INDEX], key=lambda c: c[1])]
-        self.asset_list_items = [[0, 
-                                  items[random.randint(0, len(items) - 1)], 
-                                  states[random.randint(0, len(states) - 2)],
-                                  'John Smith',
-                                  'John.Smith@drdc-rddc.gc.ca',
-                                  'Jul 28',
-                                  random.randint(100000, 10000000)] 
-                                    for i in range(100)]
-        for i in range(len(self.asset_list_items)):
-            self.asset_list_items[i][0] = i
+                                                for column in COLUMN_INDEX], key=itemgetter(1))]
+        self.asset_list_items = []
 
         # Tabs for asset list / shopping cart
         self.notebook = ttk.Notebook(self.master)
@@ -322,6 +336,20 @@ class Application(object):
         self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
         self.checkout_button.grid(row=6, column=0, sticky='s', padx=15, pady=15)
 
+        # Borrowed List
+        self.borrowed_frame = tk.Frame(self.notebook, name='borrowed_frame')
+        self.borrowed_frame.grid(row=0, column=0, sticky='nesw')
+        self.borrowed_frame.rowconfigure(0, weight=1)
+        self.borrowed_frame.columnconfigure(0, weight=1)
+        self.notebook.add(self.borrowed_frame, text='Borrowed List') 
+        self.borrowed_frame.bind('<Visibility>',
+                                    lambda event: self.tab_update_description("Borrowed Frame"))
+
+        self.borrowed_list = BorrowList(self.borrowed_frame, self, self.asset_list_header, self.asset_list_items)
+        self.borrowed_list.grid(row=0, column=0, sticky='nesw')
+        self.borrowed_list.rowconfigure(0, weight=1)
+        self.borrowed_list.columnconfigure(0, weight=1)
+
         # Settings
         self.settings_frame = tk.Frame(self.notebook, name='settings_frame')
         self.settings_frame.rowconfigure(0, weight=1)
@@ -373,8 +401,11 @@ class Application(object):
         self.file_choose_btn = tk.Button(self.db_path_frame, text='Choose', 
                                             command=self.choose_db_file)
         self.file_choose_btn.grid(row=0, column=0, sticky='new', padx=(15, 0), pady=15)
-        self.db_path_msg = tk.Text(self.db_path_frame, 
-                                    state=tk.DISABLED, height=2)
+        self.db_path_msg = tk.Entry(self.db_path_frame, 
+                                    textvariable=self.settings['database_path'],
+                                    disabledforeground='black',
+                                    disabledbackground='white',
+                                    state=tk.DISABLED)
         self.db_path_msg.grid(row=0, column=1, sticky='new', padx=(0, 15), pady=15)
         self.db_warning_lbl = tk.Label(self.db_path_frame, 
                                         text='WARNING: all unsaved changes will be lost',
@@ -386,52 +417,33 @@ class Application(object):
                 in_settings = json.load(config_file)
                 for setting in in_settings:
                     self.settings[setting].set(in_settings[setting])
+
+                self.update_asset_items(self.retrieve_assets(self.settings['database_path'].get()))
+                self.asset_list.filtered_items_ix = list(range(len(self.asset_list_items)))
+                self.shopping_cart.filtered_items_ix = list(range(0))
+                self.borrowed_list.update_filter()
+  
+                self.asset_list.repopulate_list()
+                self.shopping_cart.repopulate_list()
+                self.borrowed_list.repopulate_list()
         else:
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
             messagebox.showwarning(title='Missing user profile', 
                                         message='Please insert your information to checkout items.')
-        
 
     def choose_db_file(self, *args):
-        self.settings['db_path'] = filedialog.askopenfilename(filetypes=(('Database Files', '*.db'),))
-        conn = sqlite3.connect(self.settings['db_path'])
-        cursor = conn.cursor()
+        db_path = filedialog.askopenfilename(filetypes=(('Database Files', '*.db'),)) 
+        items = self.retrieve_assets(db_path)
 
-        SELECT_QUERY = ('SELECT assets.asset_id, name, state, (first_name || last_name), email, return_date, description ' 
-                        'from assets LEFT JOIN (SELECT * FROM borrow_list LEFT JOIN USERS)')
-        error = False
-
-        try:
+        if items is not None:
             self.asset_list.tree.delete(*self.asset_list.tree.get_children())
-            recovery = self.asset_list.items[:]   # In case something goes wrong, we can reuse this
-            del self.asset_list.items[:]  # Empty list 
-        except Exception as ex:
-            print('ERROR:', str(ex))
-            error = True
-
-        try:
-            for item in list(cursor.execute(SELECT_QUERY)):
-                item = [value if value is not None else '---' for value in item]
-                if item[COLUMN_INDEX['State']] == '---':
-                    item[COLUMN_INDEX['State']] = 'Available'
-                self.asset_list.items.append(item)
-
-            self.asset_list.filtered_items_ix = range(len(self.asset_list.items))
-        except Exception as ex:
-            print('ERROR:', str(ex))
-            self.asset_list.items = recovery
-            self.shopping_cart.items = recovery
-            error = True
-
-        if not error:
-            self.db_path_msg.configure(state=tk.NORMAL)
-            self.db_path_msg.delete('1.0', tk.END)
-            self.db_path_msg.insert(tk.END, self.settings['db_path'])
-            self.db_path_msg.configure(state=tk.DISABLED)
+            self.update_asset_items(items)
+            self.asset_list.filtered_items_ix = list(range(len(self.asset_list.items)))
+            self.settings['database_path'].set(db_path)
             self.shopping_cart.repopulate_list()
+            self.borrowed_list.repopulate_list()
 
-        self.asset_list.repopulate_list()
-        
+        self.asset_list.repopulate_list()    
 
     def _match_searchables(self, query, columns):
         """
@@ -442,6 +454,26 @@ class Application(object):
             if re.search(query, str(columns[COLUMN_INDEX[column]]), re.IGNORECASE):
                 return True 
         return False
+
+    def retrieve_assets(self, db_path):
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        SELECT_QUERY = ('SELECT assets.asset_id, name, state, (first_name || " " || last_name), email, return_date, description ' 
+                        'from assets LEFT JOIN (SELECT * FROM borrow_list LEFT JOIN USERS ON borrow_list.user_id=users.user_id) as com '
+                        'ON assets.asset_id=com.asset_id')
+        items = []
+
+        try:
+            for item in list(cursor.execute(SELECT_QUERY)):
+                item = [value if value is not None else '---' for value in item]
+                if item[COLUMN_INDEX['State']] == '---':
+                    item[COLUMN_INDEX['State']] = 'Available'
+                items.append(item)
+        except Exception as ex:
+            print('ERROR:', str(ex))
+            items = None
+
+        return items
         
     def search_clear(self, *args):
         """
@@ -450,7 +482,7 @@ class Application(object):
 
         if self.search_bar.get() == SEARCH_HINT:
             self.search_query.set('')
-
+ 
     def search(self, *args):
         """
         Filters the indexes of the asset list that matches the search query, then refreshes the list view
@@ -461,14 +493,19 @@ class Application(object):
             self.asset_list.filtered_items_ix = [index for index in range(len(self.asset_list.items))
                                                     if self._match_searchables(query, self.asset_list.items[index])]
         else:
-            self.asset_list.filtered_items_ix = range(len(self.asset_list.items))
+            self.asset_list.filtered_items_ix = list(range(len(self.asset_list.items)))
 
         self.asset_list.repopulate_list()
+
+    def update_asset_items(self, items):
+        del self.asset_list_items[:]
+        for item in items:
+            self.asset_list_items.append(item)
 
     def update_cart_count(self):
         self.notebook.tab(self.notebook.tabs()[NOTEBOOK_INDEX['Shopping Cart']], 
                     text='Shopping Cart ({})'.format(len(self.shopping_cart.filtered_items_ix)))
-
+        
     def update_description(self, tree):
         item = None
 
