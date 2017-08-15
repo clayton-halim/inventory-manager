@@ -59,6 +59,22 @@ class MultiColumnListbox(tk.Frame):
                 if self.tree.column(self.header[i], width=None) < col_width:
                     self.tree.column(self.header[i], width=col_width)
 
+    def fit_columns(self):
+        """
+        Resizes each column to fit the longest text
+        """
+
+        column_count = len(self.header)
+        widths = [tkFont.Font().measure(col) + 20 for col in self.header]
+
+        for ix in self.filtered_items_ix:
+            for i in range(column_count):
+                item_width = tkFont.Font().measure(self.items[ix][i]) + 20
+                widths[i] = max(item_width, widths[i])
+
+        for i in range(len(self.header)):
+            self.tree.column(self.header[i], width=widths[i])
+
     def sortby(self, col, descending):
         """
         Sorts the data in a list column
@@ -81,6 +97,8 @@ class MultiColumnListbox(tk.Frame):
                 self.tree.delete(row)
         for ix in self.filtered_items_ix:
             self.tree.insert('', index='end', values=self.items[ix])
+
+        self.fit_columns()
 
 class AssetList(MultiColumnListbox):
     def __init__(self, master, app_toplevel, header, items):
@@ -110,6 +128,7 @@ class AssetList(MultiColumnListbox):
             item = self.items[ix]
             self.tree.insert('', index='end', values=item, 
                                 tags=[item[COLUMN_INDEX['State']]])
+        self.fit_columns()
 
     def select_item(self, *args):
         item = self.tree.item(self.tree.focus())
