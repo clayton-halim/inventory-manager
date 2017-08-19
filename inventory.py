@@ -1,15 +1,25 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import json
 from operator import itemgetter
 import os
 import random
 import re
 import sqlite3
+import sys
 import time
 
-import tkinter as tk
-import tkinter.font as tkFont
-import tkinter.ttk as ttk
-from tkinter import messagebox, filedialog
+if sys.version_info.major == 2:
+    import Tkinter as tk
+    import tkFont
+    import ttk
+    import tkMessageBox as messagebox
+    import tkFileDialog as filedialog
+else:
+    import tkinter as tk
+    import tkinter.font as tkFont
+    import tkinter.ttk as ttk
+    from tkinter import messagebox, filedialog
 
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
 NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Borrowed List': 2, 'Settings': 3}
@@ -235,7 +245,7 @@ class BorrowList(MultiColumnListbox):
 
     def repopulate_list(self):
         self.update_filter()
-        super().repopulate_list()
+        MultiColumnListbox.repopulate_list(self)
 
     def update_filter(self):
         self.filtered_items_ix = []
