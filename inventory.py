@@ -14,7 +14,7 @@ from tkinter import messagebox, filedialog
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
 NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Borrowed List': 2, 'Settings': 3}
 SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date', 'Description']
-SEARCH_HINT = 'search...'
+SEARCH_HINT = 'Search...'
 SETTINGS = ['first_name', 'last_name', 'email', 'database_path']
 SETTINGS_PATH = os.path.join('settings', 'asset_settings.json')
 
@@ -278,7 +278,7 @@ class Application(object):
 
         # Search bar
         self.search_query = tk.StringVar()
-        self.search_query.set('search...')
+        self.search_query.set(SEARCH_HINT)
         self.search_bar = tk.Entry(self.asset_frame, exportselection=0, textvariable=self.search_query)
         self.search_bar.grid(row=0, column=0,
                                  sticky=tk.N+tk.W+tk.E)
@@ -356,9 +356,15 @@ class Application(object):
                                         textvariable=self.settings['email'])
         self.profile_email.grid(row=5, column=0, sticky='w', padx=15)
 
+        self.reason_lbl = tk.Label(self.profile_frame, text='Reason for Use', 
+                                            font=self.label_font)
+        self.reason_lbl.grid(row=6, column=0, sticky='w', padx=15, pady=(15, 0))
+        self.checkout_reason = tk.Text(self.profile_frame, width=50, height=5)
+        self.checkout_reason.grid(row=7, column=0, sticky='w', padx=15)
+
         # Checkout Button
         self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
-        self.checkout_button.grid(row=6, column=0, sticky='s', padx=15, pady=15)
+        self.checkout_button.grid(row=8, column=0, sticky='s', padx=15, pady=15)
 
         # Borrowed List
         self.borrowed_frame = tk.Frame(self.notebook, name='borrowed_frame')
@@ -475,7 +481,7 @@ class Application(object):
         """
 
         for column in SEARCHABLE:
-            if str(columns[COLUMN_INDEX[column]]).lower().find(query) != -1:
+            if str(columns[COLUMN_INDEX[column]]).lower().find(query.lower()) != -1:
                 return True 
         return False
 
