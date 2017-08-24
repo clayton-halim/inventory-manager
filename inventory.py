@@ -22,7 +22,7 @@ else:
     from tkinter import messagebox, filedialog
 
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
-NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Borrowed List': 2, 'Settings': 3}
+NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Settings': 2}
 SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date', 'Description']
 SEARCH_HINT = 'Search...'
 SETTINGS = ['first_name', 'last_name', 'email', 'database_path']
@@ -231,29 +231,6 @@ class ShoppingCart(MultiColumnListbox):
                     self.app_toplevel.asset_list.tree.item(leaf_id, 
                         values=new_values, tags=[new_values[COLUMN_INDEX['State']]])
                     break
-
-class BorrowList(MultiColumnListbox):
-    def __init__(self, master, app_toplevel, header, items):
-        MultiColumnListbox.__init__(self, master, header, items)
-        self.master = master
-        self.app_toplevel = app_toplevel
-        for binding in ['<ButtonRelease-1>', '<KeyRelease-Up>', '<KeyRelease-Down>']:
-            self.tree.bind(binding, 
-                        lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
-        self.update_filter()
-        self.repopulate_list()
-
-    def repopulate_list(self):
-        self.update_filter()
-        MultiColumnListbox.repopulate_list(self)
-
-    def update_filter(self):
-        self.filtered_items_ix = []
-
-        for ix in range(len(self.items)):
-            if (self.items[ix][COLUMN_INDEX['Email']].lower() 
-                    == self.app_toplevel.settings['email'].get().lower()):
-                self.filtered_items_ix.append(ix)
         
 class Application(object):
     def __init__(self, master):
@@ -375,20 +352,6 @@ class Application(object):
         self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
         self.checkout_button.grid(row=8, column=0, sticky='s', padx=15, pady=15)
 
-        # Borrowed List
-        self.borrowed_frame = tk.Frame(self.notebook, name='borrowed_frame')
-        self.borrowed_frame.grid(row=0, column=0, sticky='nesw')
-        self.borrowed_frame.rowconfigure(0, weight=1)
-        self.borrowed_frame.columnconfigure(0, weight=1)
-        self.notebook.add(self.borrowed_frame, text='Borrowed List') 
-        self.borrowed_frame.bind('<Visibility>',
-                                    lambda event: self.tab_update_description("Borrowed Frame"))
-
-        self.borrowed_list = BorrowList(self.borrowed_frame, self, self.asset_list_header, self.asset_list_items)
-        self.borrowed_list.grid(row=0, column=0, sticky='nesw')
-        self.borrowed_list.rowconfigure(0, weight=1)
-        self.borrowed_list.columnconfigure(0, weight=1)
-
         # Settings
         self.settings_frame = tk.Frame(self.notebook, name='settings_frame')
         self.settings_frame.rowconfigure(0, weight=1)
@@ -430,11 +393,9 @@ class Application(object):
                 self.update_asset_items(self.retrieve_assets(self.settings['database_path'].get()))
                 self.asset_list.filtered_items_ix = list(range(len(self.asset_list_items)))
                 self.shopping_cart.filtered_items_ix = list(range(0))
-                self.borrowed_list.update_filter()
   
                 self.asset_list.repopulate_list()
                 self.shopping_cart.repopulate_list()
-                self.borrowed_list.repopulate_list()
         else:
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
             messagebox.showwarning(title='Missing user profile', 
@@ -450,7 +411,6 @@ class Application(object):
             self.asset_list.filtered_items_ix = list(range(len(self.asset_list.items)))
             self.settings['database_path'].set(db_path)
             self.shopping_cart.repopulate_list()
-            self.borrowed_list.repopulate_list()
 
         self.asset_list.repopulate_list()    
 
