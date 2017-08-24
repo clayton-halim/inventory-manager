@@ -413,7 +413,9 @@ class Application(object):
             self.update_asset_items(items)
             self.asset_list.filtered_items_ix = list(range(len(self.asset_list.items)))
             self.settings['database_path'].set(db_path)
+            self.shopping_cart.filtered_items_ix = []
             self.shopping_cart.repopulate_list()
+            self.update_cart_count()
 
         self.asset_list.repopulate_list()    
 
