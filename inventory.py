@@ -268,7 +268,7 @@ class Application(object):
         self.search_query.set(SEARCH_HINT)
         self.search_bar = tk.Entry(self.asset_frame, exportselection=0, textvariable=self.search_query)
         self.search_bar.grid(row=0, column=0,
-                                 sticky=tk.N+tk.W+tk.E)
+                                 sticky='nesw')
         self.search_bar.bind('<FocusIn>', self.search_clear)
         self.search_query.trace('w', self.search)
 
@@ -400,6 +400,9 @@ class Application(object):
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
             messagebox.showwarning(title='Missing user profile', 
                                         message='Please insert your information to checkout items.')
+
+    def checkout_cart(self, *args):
+        pass
 
     def choose_db_file(self, *args):
         db_path = filedialog.askopenfilename(filetypes=(('Database Files', '*.db'),)) 
