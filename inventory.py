@@ -416,7 +416,8 @@ class Application(object):
             self.shopping_cart.filtered_items_ix = []
             self.shopping_cart.repopulate_list()
             self.update_cart_count()
-
+            self.history_msg.set('Changed database ({})'.format(path))
+            
         self.asset_list.repopulate_list()    
 
     def _match_searchables(self, query, columns):
