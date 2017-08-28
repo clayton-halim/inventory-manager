@@ -22,7 +22,7 @@ else:
     from tkinter import messagebox, filedialog
 
 COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
-NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Borrowed List': 2, 'Settings': 3}
+NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Settings': 2}
 SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date', 'Description']
 SEARCH_HINT = 'Search...'
 SETTINGS = ['first_name', 'last_name', 'email', 'database_path']
@@ -231,29 +231,6 @@ class ShoppingCart(MultiColumnListbox):
                     self.app_toplevel.asset_list.tree.item(leaf_id, 
                         values=new_values, tags=[new_values[COLUMN_INDEX['State']]])
                     break
-
-class BorrowList(MultiColumnListbox):
-    def __init__(self, master, app_toplevel, header, items):
-        MultiColumnListbox.__init__(self, master, header, items)
-        self.master = master
-        self.app_toplevel = app_toplevel
-        for binding in ['<ButtonRelease-1>', '<KeyRelease-Up>', '<KeyRelease-Down>']:
-            self.tree.bind(binding, 
-                        lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
-        self.update_filter()
-        self.repopulate_list()
-
-    def repopulate_list(self):
-        self.update_filter()
-        MultiColumnListbox.repopulate_list(self)
-
-    def update_filter(self):
-        self.filtered_items_ix = []
-
-        for ix in range(len(self.items)):
-            if (self.items[ix][COLUMN_INDEX['Email']].lower() 
-                    == self.app_toplevel.settings['email'].get().lower()):
-                self.filtered_items_ix.append(ix)
         
 class Application(object):
     def __init__(self, master):
@@ -291,7 +268,7 @@ class Application(object):
         self.search_query.set(SEARCH_HINT)
         self.search_bar = tk.Entry(self.asset_frame, exportselection=0, textvariable=self.search_query)
         self.search_bar.grid(row=0, column=0,
-                                 sticky=tk.N+tk.W+tk.E)
+                                 sticky='nesw')
         self.search_bar.bind('<FocusIn>', self.search_clear)
         self.search_query.trace('w', self.search)
 
@@ -337,7 +314,7 @@ class Application(object):
         self.shopping_cart.columnconfigure(0, weight=1)
 
         # User Profile Frame
-        self.label_font = tkFont.Font(weight='bold')
+        self.label_font = tkFont.Font(size=8, weight='bold')
 
         self.profile_frame = ttk.LabelFrame(self.cart_frame, 
                                             text='Your Info', labelanchor='n')
@@ -348,83 +325,38 @@ class Application(object):
         self.profile_fname_lbl = tk.Label(self.profile_frame, text='First Name', 
                                             font=self.label_font)
         self.profile_fname_lbl.grid(row=0, column=0, sticky='w', padx=15, pady=(15, 0))
-        self.profile_fname = tk.Label(self.profile_frame, 
-                                        textvariable=self.settings['first_name'])
-        self.profile_fname.grid(row=1, column=0, sticky='w', padx=15)
-
+        self.first_name_entry = tk.Entry(self.profile_frame, 
+                                            textvariable=self.settings['first_name'])
+        self.first_name_entry.grid(row=1, column=0, sticky='ew', padx=15)
         self.profile_lname_lbl = tk.Label(self.profile_frame, text='Last Name', 
                                             font=self.label_font)
         self.profile_lname_lbl.grid(row=2, column=0, sticky='w', padx=15, pady=(15, 0))
-        self.profile_lname = tk.Label(self.profile_frame, 
+        self.last_name_entry = tk.Entry(self.profile_frame, 
                                         textvariable=self.settings['last_name'])
-        self.profile_lname.grid(row=3, column=0, sticky='w', padx=15)
+        self.last_name_entry.grid(row=3, column=0, sticky='ew', padx=15)
 
         self.profile_email_lbl = tk.Label(self.profile_frame, text='Email', 
                                             font=self.label_font)
         self.profile_email_lbl.grid(row=4, column=0, sticky='w', padx=15, pady=(15, 0))
-        self.profile_email = tk.Label(self.profile_frame, 
-                                        textvariable=self.settings['email'])
-        self.profile_email.grid(row=5, column=0, sticky='w', padx=15)
+        self.email_entry = tk.Entry(self.profile_frame, 
+                                    textvariable=self.settings['email'])
+        self.email_entry.grid(row=5, column=0, sticky='ew', padx=15, pady=(0, 10))
 
         self.reason_lbl = tk.Label(self.profile_frame, text='Reason for Use', 
                                             font=self.label_font)
         self.reason_lbl.grid(row=6, column=0, sticky='w', padx=15, pady=(15, 0))
-        self.checkout_reason = tk.Text(self.profile_frame, width=50, height=5)
-        self.checkout_reason.grid(row=7, column=0, sticky='w', padx=15)
+        self.checkout_reason = tk.Text(self.profile_frame, height=5)
+        self.checkout_reason.grid(row=7, column=0, sticky='ew', padx=15)
 
         # Checkout Button
         self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
         self.checkout_button.grid(row=8, column=0, sticky='s', padx=15, pady=15)
-
-        # Borrowed List
-        self.borrowed_frame = tk.Frame(self.notebook, name='borrowed_frame')
-        self.borrowed_frame.grid(row=0, column=0, sticky='nesw')
-        self.borrowed_frame.rowconfigure(0, weight=1)
-        self.borrowed_frame.columnconfigure(0, weight=1)
-        self.notebook.add(self.borrowed_frame, text='Borrowed List') 
-        self.borrowed_frame.bind('<Visibility>',
-                                    lambda event: self.tab_update_description("Borrowed Frame"))
-
-        self.borrowed_list = BorrowList(self.borrowed_frame, self, self.asset_list_header, self.asset_list_items)
-        self.borrowed_list.grid(row=0, column=0, sticky='nesw')
-        self.borrowed_list.rowconfigure(0, weight=1)
-        self.borrowed_list.columnconfigure(0, weight=1)
 
         # Settings
         self.settings_frame = tk.Frame(self.notebook, name='settings_frame')
         self.settings_frame.rowconfigure(0, weight=1)
         self.settings_frame.columnconfigure(1, weight=1)
         self.notebook.add(self.settings_frame, text="Settings")
-
-        # User Settings Frame
-        self.user_frame = ttk.LabelFrame(self.settings_frame, text='User Settings', 
-                                            labelanchor='n')
-        self.user_frame.grid(row=0, column=0, sticky='nesw', padx=20, pady=20)
-
-        self.first_name_lbl = tk.Label(self.user_frame, text='First Name')
-        self.first_name_lbl.grid(row=0, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
-
-        self.first_name_entry = tk.Entry(self.user_frame, width=40, 
-                                            textvariable=self.settings['first_name'])
-        self.first_name_entry.grid(row=1, column=0, sticky='w', padx=20)
-
-        self.last_name_lbl = tk.Label(self.user_frame, text='Last Name')
-        self.last_name_lbl.grid(row=2, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
-
-        self.last_name_entry = tk.Entry(self.user_frame, width=40, 
-                                        textvariable=self.settings['last_name'])
-        self.last_name_entry.grid(row=3, column=0, sticky='w', padx=20)
-
-        self.email_lbl = tk.Label(self.user_frame, text='Email') 
-        self.email_lbl.grid(row=4, column=0, sticky='w', padx=(20, 0), pady=(15, 0))
-
-        self.email_entry = tk.Entry(self.user_frame, width=40, 
-                                    textvariable=self.settings['email'])
-        self.email_entry.grid(row=5, column=0, sticky='w', padx=20, pady=(0, 10))
-
-        self.save_settings_btn = tk.Button(self.user_frame, text='Save', width=10,
-                                            command=self.save_settings)
-        self.save_settings_btn.grid(row=6, column=0, sticky='s', pady=15)
 
         self.about_frame = tk.Frame(self.settings_frame)
         self.about_frame.grid(row=0, column=1, sticky='new')
@@ -461,15 +393,16 @@ class Application(object):
                 self.update_asset_items(self.retrieve_assets(self.settings['database_path'].get()))
                 self.asset_list.filtered_items_ix = list(range(len(self.asset_list_items)))
                 self.shopping_cart.filtered_items_ix = list(range(0))
-                self.borrowed_list.update_filter()
   
                 self.asset_list.repopulate_list()
                 self.shopping_cart.repopulate_list()
-                self.borrowed_list.repopulate_list()
         else:
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
             messagebox.showwarning(title='Missing user profile', 
                                         message='Please insert your information to checkout items.')
+
+    def checkout_cart(self, *args):
+        pass
 
     def choose_db_file(self, *args):
         db_path = filedialog.askopenfilename(filetypes=(('Database Files', '*.db'),)) 
@@ -480,9 +413,11 @@ class Application(object):
             self.update_asset_items(items)
             self.asset_list.filtered_items_ix = list(range(len(self.asset_list.items)))
             self.settings['database_path'].set(db_path)
+            self.shopping_cart.filtered_items_ix = []
             self.shopping_cart.repopulate_list()
-            self.borrowed_list.repopulate_list()
-
+            self.update_cart_count()
+            self.history_msg.set('Changed database ({})'.format(path))
+            
         self.asset_list.repopulate_list()    
 
     def _match_searchables(self, query, columns):
@@ -588,13 +523,18 @@ class Application(object):
 
 def main():
     root = tk.Tk()
+    default_font = tkFont.Font(family='Helvetica')
+    print(tkFont.Font(font=default_font).configure())
+    
+    # default_font.configure(size=48)
+    # root.option_add('*Font', default_font)
+
     app = Application(root)
     root.title('Inventory Manager')
-    MYFONT = tkFont.Font(root, size=16)
+    MYFONT = tkFont.Font(root, size=12)
 
     style = ttk.Style()
-    style.configure('.', font=MYFONT)
-    style.configure('Treeview.Heading', font=MYFONT, weight='bold')
+    # style.configure('Treeview.Heading', font=MYFONT, weight='bold')
 
     root.update()
     root.minsize(root.winfo_width(), root.winfo_height())
