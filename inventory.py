@@ -21,7 +21,9 @@ else:
     import tkinter.ttk as ttk
     from tkinter import messagebox, filedialog
 
-COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 'Email': 4, 'Due Date': 5, 'Description': 6}
+COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3, 
+                'Email': 4, 'Due Date': 5, 'Storage Location': 6, 
+                'Description': 7, 'Comments': 8}
 NOTEBOOK_INDEX = {'Asset List': 0, 'Shopping Cart': 1, 'Settings': 2}
 SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 'Due Date', 'Description']
 SEARCH_HINT = 'Search...'
@@ -433,9 +435,11 @@ class Application(object):
     def retrieve_assets(self, db_path):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        SELECT_QUERY = ('SELECT assets.asset_id, name, state, (first_name || " " || last_name), email, return_date, description ' 
-                        'from assets LEFT JOIN (SELECT * FROM borrow_list LEFT JOIN USERS ON borrow_list.user_id=users.user_id) as com '
-                        'ON assets.asset_id=com.asset_id')
+        SELECT_QUERY = ('SELECT assets.asset_id, name, state, borrower_name, ' 
+                        'borrower_email, return_date, storage_location, '
+                        'description, comments ' 
+                        'from assets LEFT JOIN borrow_list '
+                        'ON assets.asset_id=borrow_list.asset_id')
         items = []
 
         try:
