@@ -247,7 +247,7 @@ class Application(object):
         self.asset_list_header = [header[0] for header in 
                                     sorted([(column, COLUMN_INDEX[column]) 
                                                 for column in COLUMN_INDEX], key=itemgetter(1))
-                                    if header[0] not in ['Description']]
+                                    if header[0] not in ['Description', 'Comments']]
         self.asset_list_items = []
 
         # Tabs for asset list / shopping cart
@@ -492,8 +492,8 @@ class Application(object):
 
         try:
             item = tree.item(tree.focus())['values']
-        except KeyError as ke:
-            pass
+        except:
+            description = ''
     
         if item is not None and item != '':
             description = item[COLUMN_INDEX['Description']]
@@ -501,11 +501,13 @@ class Application(object):
             if item[COLUMN_INDEX['Comments']] != '---':
                 description += '\n\nBorrower Comments: {}'.format(
                                         item[COLUMN_INDEX['Comments']])
+        else:
+            description = ''
 
-            self.item_msg.configure(state=tk.NORMAL)
-            self.item_msg.delete('1.0', tk.END)
-            self.item_msg.insert(tk.END, description)
-            self.item_msg.configure(state=tk.DISABLED)
+        self.item_msg.configure(state=tk.NORMAL)
+        self.item_msg.delete('1.0', tk.END)
+        self.item_msg.insert(tk.END, description)
+        self.item_msg.configure(state=tk.DISABLED)
 
     def save_settings(self, *args):
         new_settings = {setting: self.settings[setting].get() 
@@ -529,6 +531,12 @@ class Application(object):
 
         if tree_type is not None:
             self.update_description(tree_type)
+        else:
+            self.item_msg.configure(state=tk.NORMAL)
+            self.item_msg.delete('1.0', tk.END)
+            self.item_msg.insert(tk.END, '')
+            self.item_msg.configure(state=tk.DISABLED)
+
 
 def main():
     root = tk.Tk()
