@@ -497,6 +497,11 @@ class Application(object):
     
         if item is not None and item != '':
             description = item[COLUMN_INDEX['Description']]
+
+            if item[COLUMN_INDEX['Comments']] != '---':
+                description += '\n\nBorrower Comments: {}'.format(
+                                        item[COLUMN_INDEX['Comments']])
+
             self.item_msg.configure(state=tk.NORMAL)
             self.item_msg.delete('1.0', tk.END)
             self.item_msg.insert(tk.END, description)
