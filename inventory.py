@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import datetime
 import json
 from operator import itemgetter
 import os
@@ -127,8 +128,9 @@ class AssetList(MultiColumnListbox):
                         lambda event, tree=self.tree: self.app_toplevel.update_description(tree))
         self.tree.bind('<Double-Button-1>', self.select_item)
         self.tree.bind('<Return>', self.select_item)
-        self.tree.tag_configure('Borrowed', background='#F44336')
-        self.tree.tag_configure('Shopping Cart', background='#80DEEA')
+        self.tree.tag_configure('Borrowed', background='#EF9A9A')
+        self.tree.tag_configure('Requested', background='#FFCC80')
+        self.tree.tag_configure('Shopping Cart', background='#90CAF9')
         self.items.sort(key=itemgetter(COLUMN_INDEX['Asset Number']))
         self.repopulate_list()
 
@@ -302,7 +304,7 @@ class Application(object):
         self.cart_frame = tk.Frame(self.notebook, name='cart_frame')
         self.cart_frame.grid(row=0, column=0, sticky='nesw')
         self.cart_frame.rowconfigure(0, weight=1)
-        self.cart_frame.columnconfigure(0, weight=3)
+        self.cart_frame.columnconfigure(0, weight=2)
         self.cart_frame.columnconfigure(1, weight=1)
         self.notebook.add(self.cart_frame, text='Shopping Cart (0)') 
         self.cart_frame.bind('<Visibility>',
@@ -351,7 +353,8 @@ class Application(object):
         self.checkout_reason.grid(row=7, column=0, sticky='ew', padx=15)
 
         # Checkout Button
-        self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items')
+        self.checkout_button = tk.Button(self.profile_frame, text='Checkout Items',
+                                            command=self.checkout_cart)
         self.checkout_button.grid(row=8, column=0, sticky='s', padx=15, pady=15)
 
         # Settings
@@ -404,7 +407,69 @@ class Application(object):
                                         message='Please insert your information to checkout items.')
 
     def checkout_cart(self, *args):
-        pass
+        """
+        Updates the database to indicate the items in the shopping cart have been requested
+        """
+
+        db_path = self.settings['database_path'].get()
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        SELECT_QUERY = ('SELECT borrow_list.asset_id, name FROM borrow_list '
+                        'LEFT JOIN assets '
+                        'WHERE borrow_list.asset_id={}')
+
+        CHECKOUT_QUERY = ('INSERT INTO borrow_list '
+                          'VALUES (?,?,?,?,?,?,?)')
+
+        today = datetime.date.today()
+        today_formatted = '{}-{:02}-{:02}'.format(
+                            today.year, today.month, today.day)
+        borrow_time = datetime.timedelta(days=30)
+        due_date = today + borrow_time
+        due_formatted = '{}-{:02}-{:02}'.format(
+                            due_date.year, due_date.month, due_date.day)
+
+        checked_out = []  # Keep track of items that may be requested already
+
+        for ix in self.shopping_cart.filtered_items_ix:
+            values = self.shopping_cart.items[ix]
+
+            result = cursor.execute(SELECT_QUERY.format(
+                        values[COLUMN_INDEX['Asset Number']]))
+
+            if list(result):
+                checked_out.append((values[COLUMN_INDEX['Asset Number']], 
+                                    values[COLUMN_INDEX['Item']]))
+            else:
+                first_name = self.settings['first_name'].get()
+                last_name = self.settings['last_name'].get()
+                full_name = '{} {}'.format(first_name, last_name)
+
+                cursor.execute(CHECKOUT_QUERY,
+                    [values[COLUMN_INDEX['Asset Number']], 
+                    full_name,
+                    self.settings['email'].get(), 'Requested',
+                    today_formatted, due_formatted,
+                    self.checkout_reason.get('1.0', tk.END)])
+                conn.commit()
+
+        if checked_out:
+            checked = ', '.join(['{} ({})'.format(name, asset_num) 
+                                 for asset_num, name in checked_out])
+            messagebox.showwarning('Checkout Error',
+                                   ('The following items have already ' 
+                                    'been checked out by someone else: {}').format(checked))
+
+        self.history_msg.set('{} items were checked out'.format(
+            len(self.shopping_cart.filtered_items_ix) - len(checked_out)))
+
+        self.shopping_cart.filtered_items_ix = list(range(0))
+        self.shopping_cart.repopulate_list()
+        self.update_cart_count()
+
+        items = self.retrieve_assets(self.settings['database_path'].get())
+        self.update_asset_items(items)
+        self.asset_list.repopulate_list()
 
     def choose_db_file(self, *args):
         db_path = filedialog.askopenfilename(filetypes=(('Database Files', '*.db'),)) 
@@ -447,9 +512,7 @@ class Application(object):
                 item = [value if value is not None else '---' for value in item]
                 if item[COLUMN_INDEX['State']] == '---':
                     item[COLUMN_INDEX['State']] = 'Available'
-                if item[COLUMN_INDEX['Due Date']] != '---':
-                    item[COLUMN_INDEX['Due Date']] = time.ctime(
-                                                        int(item[COLUMN_INDEX['Due Date']]))
+    
                 items.append(item)
         except Exception as ex:
             print('ERROR:', str(ex))
