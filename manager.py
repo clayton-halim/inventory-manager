@@ -162,8 +162,6 @@ class AddItemWindow(object):
                     num_count[num] = 1
 
             non_unique_assets = [num for num in num_count if num_count[num] > 1]
-            # print(asset_num_list)
-            # print(non_unique_assets)
 
             if not is_update:
                 for asset_no in asset_num_list:
@@ -322,6 +320,20 @@ class AssetList(MultiColumnListbox):
             messagebox.showerror('Approve Error', 
                 '{} is not requested'.format(values[COLUMN_INDEX['Item']]))
 
+    def change_values(self, new_values):
+        """
+        Change the values of the selected item on the list
+        """
+
+        asset_number = self.selected_values[COLUMN_INDEX['Asset Number']]
+
+        for leaf_id in self.tree.get_children(''):
+                current = self.tree.item(leaf_id)
+
+                if asset_number == current['values'][COLUMN_INDEX['Asset Number']]:
+                    self.tree.item(leaf_id, values=new_values, 
+                                    tags=[new_values[COLUMN_INDEX['State']]])
+                    break
 
     def delete_item(self, *args):
         """
@@ -348,6 +360,36 @@ class AssetList(MultiColumnListbox):
             self.app_toplevel.history_msg.set(
                 'Deleted {} from database'.format(values[COLUMN_INDEX['Item']]))
             self.tree.delete(self.tree.selection()[0])
+
+    def extend_due_date(self, *args):
+        """
+        Extend the due date of an item by 30 days
+        """
+
+        values = self.selected_values
+        asset_num = values[COLUMN_INDEX['Asset Number']]
+        year, month, day = [int(d) for d in values[COLUMN_INDEX['Due Date']].split('-')]
+
+        old_due = datetime.date(year=year, month=month, day=day)
+        extra = datetime.timedelta(days=30)
+        new_due = old_due + extra
+
+        due_formatted = '{}-{:02}-{:02}'.format(
+                            new_due.year, new_due.month, new_due.day)
+
+        db_path = self.app_toplevel.settings['database_path'].get()
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute(('UPDATE borrow_list '
+                        'SET return_date = "{}" '
+                        'WHERE asset_id={}').format(due_formatted, asset_num))
+        conn.commit()
+        conn.close()
+
+        values[COLUMN_INDEX['Due Date']] = due_formatted
+        self.change_values(values)
+        self.app_toplevel.history_msg.set('Extended due date of {} by 30 days'.format(
+            values[COLUMN_INDEX['Item']]))
 
     def make_available(self):
         """
@@ -381,6 +423,10 @@ class AssetList(MultiColumnListbox):
         self.fit_columns()
 
     def select_item(self, *args):
+        """
+        Update the selected item on the list
+        """
+
         item = self.tree.item(self.tree.focus())
         item_index = self.tree.index(self.tree.focus())
         full_list_index = self.filtered_items_ix[item_index]
@@ -411,18 +457,15 @@ class AssetList(MultiColumnListbox):
             for column in ['Loaned To', 'Email', 'Date Requested', 'Due Date']:
                 values[COLUMN_INDEX[column]] = '---'
 
-        for leaf_id in self.tree.get_children(''):
-                current = self.tree.item(leaf_id)
-
-                if asset_number == current['values'][COLUMN_INDEX['Asset Number']]:
-                    self.tree.item(leaf_id, values=values, 
-                                    tags=[values[COLUMN_INDEX['State']]])
-                    break
-
+        self.change_values(values)
         self.app_toplevel.history_msg.set(
             '{} is now {}'.format(values[COLUMN_INDEX['Item']].lower(), state))
 
     def popup_menu(self, event):
+        """
+        Right click menu for items on the list
+        """
+
         iid = self.tree.identify_row(event.y)
         self.selected_values = self.tree.item(iid)['values']
 
@@ -440,6 +483,8 @@ class AssetList(MultiColumnListbox):
             if values[COLUMN_INDEX['State']] != 'Available':
                 rclick_menu.add_command(label="Make Available",
                                             command=self.make_available)
+                rclick_menu.add_command(label="Extend Due Date by 30 days",
+                                            command=self.extend_due_date)
 
                 if values[COLUMN_INDEX['State']] == 'Requested':
                     rclick_menu.add_command(label="Approve Request",
