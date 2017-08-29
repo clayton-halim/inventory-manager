@@ -26,7 +26,7 @@ COLUMN_INDEX = {'Asset Number': 0, 'Item': 1, 'State': 2, 'Loaned To': 3,
                 'Email': 4, 'Date Requested': 5, 'Due Date': 6,
                 'Storage Location': 7, 'Purchase Date': 8, 'Description': 9, 
                 'Comments': 10}
-NOTEBOOK_INDEX = {'Asset List': 0, 'Settings': 3}
+NOTEBOOK_INDEX = {'Asset List': 0, 'Settings': 1}
 SEARCHABLE = ['Asset Number', 'Item', 'Loaned To', 'Email', 
                 'Date Requested', 'Due Date', 'Description', 
                 'Purchase Date', 'Storage Location']
@@ -305,6 +305,7 @@ class AssetList(MultiColumnListbox):
         self.tree.tag_configure('Borrowed', background='#EF9A9A')
         self.tree.tag_configure('Requested', background='#FFCC80')
         self.tree.tag_configure('Shopping Cart', background='#90CAF9')
+        self.tree.tag_configure('Overdue', background='#B39DDB')
         self.items.sort(key=itemgetter(COLUMN_INDEX['Asset Number']))
         self.repopulate_list()
 
@@ -654,12 +655,19 @@ class Application(object):
                         'from assets LEFT JOIN borrow_list '
                         'ON assets.asset_id=borrow_list.asset_id')
         items = []
+        today = datetime.date.today()
 
         try:
             for item in list(cursor.execute(SELECT_QUERY)):
                 item = [value if value is not None else '---' for value in item]
                 if item[COLUMN_INDEX['State']] == '---':
                     item[COLUMN_INDEX['State']] = 'Available'
+                elif item[COLUMN_INDEX['State']] == 'Borrowed':
+                    year, month, day = [int(d) for d in item[COLUMN_INDEX['Due Date']].split('-')]
+                    due_date = datetime.date(year=year, month=month, day=day)
+
+                    if today > due_date:
+                        item[COLUMN_INDEX['State']] = 'Overdue'
 
                 items.append(item)
         except Exception as ex:
@@ -738,18 +746,9 @@ class Application(object):
 
 def main():
     root = tk.Tk()
-    default_font = tkFont.Font(family='Helvetica')
-    print(tkFont.Font(font=default_font).configure())
-    
-    # default_font.configure(size=48)
-    # root.option_add('*Font', default_font)
-
     app = Application(root)
     root.title('Inventory Manager')
     MYFONT = tkFont.Font(root, size=12)
-
-    style = ttk.Style()
-    # style.configure('Treeview.Heading', font=MYFONT, weight='bold')
 
     root.update()
     root.minsize(root.winfo_width(), root.winfo_height())
