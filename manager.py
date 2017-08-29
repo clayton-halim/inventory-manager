@@ -128,6 +128,10 @@ class AddItemWindow(object):
         self.root.mainloop()
 
     def add_items(self, is_update, *args):
+        """
+        Add or update items in the asset list database
+        """
+
         database_path = self.app_toplevel.settings['database_path'].get()
         asset_numbers = self.asset_num_entry.get_text()
         asset_name = self.name_entry.get_text()
@@ -174,20 +178,46 @@ class AddItemWindow(object):
                 messagebox.showerror('Update Error', 
                                         'Non-unique asset numbers:' 
                                         + ', '.join(non_unique_assets))
+            elif is_update and len(asset_num_list) > 1:
+                messagebox.showerror('Update Error',
+                                        'Cannot add multiple items for an update')
             else:
-                QUERY = 'INSERT OR REPLACE INTO assets VALUES (?,?,?,?,?)'
+                if is_update:
+                    values = self.app_toplevel.asset_list.selected_values
+                    old_asset_num = values[COLUMN_INDEX['Asset Number']]
+                    DELETE_QUERY = 'DELETE FROM assets WHERE asset_id={}'.format(
+                                        old_asset_num)
+
+                    UPDATE_QUERY = ('UPDATE borrow_list ' 
+                                    'SET asset_id = {} '
+                                    'WHERE asset_id = {}').format(old_asset_num, asset_num_list[0])
+
+                    cursor.execute(DELETE_QUERY)
+                    cursor.execute(UPDATE_QUERY)
+
+                ADD_QUERY = 'INSERT INTO assets VALUES (?,?,?,?,?)'
                 # Split asset number entry by , for bulk entry
                 for asset_no in asset_num_list:
-                    cursor.execute(QUERY, [asset_no, asset_name, 
-                                            description, purchase_date,
-                                            storage_location])
+                    cursor.execute(ADD_QUERY, [asset_no, asset_name, 
+                                                description, purchase_date,
+                                                storage_location])
                     conn.commit()
                 
-                items = self.app_toplevel.retrieve_assets(database_path)
-                self.app_toplevel.update_asset_items(items)
-                self.app_toplevel.asset_list.filtered_items_ix = list(
-                                                range(len(self.app_toplevel.asset_list_items)))
-                self.app_toplevel.asset_list.repopulate_list()
+                if is_update:
+                    new_values = list(values)
+                    new_values[COLUMN_INDEX['Asset Number']] = asset_num_list[0]
+                    new_values[COLUMN_INDEX['Item']] = asset_name
+                    new_values[COLUMN_INDEX['Description']] = description
+                    new_values[COLUMN_INDEX['Purchase Date']] = purchase_date
+                    new_values[COLUMN_INDEX['Storage Location']] = storage_location
+                    self.app_toplevel.asset_list.change_values(new_values)
+                else:
+                    items = self.app_toplevel.retrieve_assets(database_path)
+                    self.app_toplevel.update_asset_items(items)
+                    self.app_toplevel.asset_list.filtered_items_ix = list(
+                                                    range(len(self.app_toplevel.asset_list_items)))
+                    self.app_toplevel.asset_list.repopulate_list()
+                
                 self.root.destroy()
 
             conn.close()
