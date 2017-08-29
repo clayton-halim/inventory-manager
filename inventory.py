@@ -404,8 +404,8 @@ class Application(object):
                 self.shopping_cart.repopulate_list()
         else:
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
-            messagebox.showwarning(title='Missing user profile', 
-                                        message='Please insert your information to checkout items.')
+            messagebox.showwarning(title='Missing database path', 
+                                        message='Please select the database file to read in.')
 
     def checkout_cart(self, *args):
         """
@@ -481,10 +481,11 @@ class Application(object):
             self.update_asset_items(items)
             self.asset_list.filtered_items_ix = list(range(len(self.asset_list.items)))
             self.settings['database_path'].set(db_path)
+            self.save_settings()
             self.shopping_cart.filtered_items_ix = []
             self.shopping_cart.repopulate_list()
             self.update_cart_count()
-            self.history_msg.set('Changed database ({})'.format(path))
+            self.history_msg.set('Changed database ({})'.format(db_path))
             
         self.asset_list.repopulate_list()    
 
@@ -614,7 +615,7 @@ def main():
     app = Application(root)
     root.title('Inventory Manager')
     MYFONT = tkFont.Font(root, size=12)
-    
+
     root.update()
     root.minsize(root.winfo_width(), root.winfo_height())
     root.mainloop()

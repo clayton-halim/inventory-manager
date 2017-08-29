@@ -645,8 +645,8 @@ class Application(object):
                 self.asset_list.repopulate_list()
         else:
             self.notebook.select(self.notebook.tabs()[NOTEBOOK_INDEX['Settings']])
-            messagebox.showwarning(title='Missing user profile', 
-                                        message='Please insert your information to checkout items.')
+            messagebox.showwarning(title='Missing database path', 
+                                        message='Please select the database file to read in.')
 
     def choose_db_file(self, *args):
         db_path = filedialog.askopenfilename(filetypes=(('Database File', '*.db'),)) 
